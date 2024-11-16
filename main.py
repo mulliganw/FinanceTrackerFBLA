@@ -1,11 +1,12 @@
 import pandas
 from typing import *
+import mysql.connector
 
 class Transaction :
     total_transactions = 0
-    def __init__(self, amount, item=None, location=None) : 
+    def __init__(self, amount, item=None, location=None) :
         User.total_transactions += 1
-        self.id = User.total_transactions 
+        self.id = User.total_transactions
         self.amount = amount
         self.item = item
         self.location = location
@@ -33,3 +34,14 @@ class Account :
         self.id = Account.total_accounts
         self.owner = owner
         self.balance = balance
+
+class Connection :
+    def __init__(self):
+        db = mysql.connector.connect(
+            host='127.0.0.1',
+            user='root',
+            password='amongus123',
+            port='3306',
+            database='financefbla'
+        )
+
