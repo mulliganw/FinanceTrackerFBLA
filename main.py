@@ -1,6 +1,10 @@
 import pandas
 from typing import *
 import mysql.connector
+import socket
+
+hostname = socket.gethostname()
+IP = socket.gethostbyname(hostname)
 
 class Transaction :
     total_transactions = 0
@@ -35,13 +39,28 @@ class Account :
         self.owner = owner
         self.balance = balance
 
-class Connection :
+class Database :
     def __init__(self):
-        db = mysql.connector.connect(
-            host='127.0.0.1',
+        self.db = mysql.connector.connect(
+            host=f'{IP}',
             user='root',
-            password='amongus123',
+            password='root',
             port='3306',
             database='financefbla'
         )
 
+    def create_user(self, id, username):
+        cursor = self.db.cursor()
+        sql = f"""INSERT INTO users(
+    id, username)
+    VALUES ({id},'{username}')"""
+        cursor.execute(sql)
+        cursor.execute('SELECT * FROM users')
+        print(cursor.fetchall())
+
+    def delete_user(self, id):
+        cursor = self.db.cursor()
+        cursor.execute(f'DELETE FROM users WHERE id={id}')
+        print(cursor.fetchall())
+db = Database()
+db.create_user(1, 'BillyMulligan')
