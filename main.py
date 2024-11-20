@@ -1,6 +1,5 @@
 import pandas as pd
 from typing import *
-import mysql.connector
 import socket
 
 hostname = socket.gethostname()
@@ -39,17 +38,22 @@ class Account :
         self.owner = owner
         self.balance = balance
 
+# TODO: Update __init__ to read the csv and make the dataframe that if it exists already
 class Database :
     def __init__(self, filename, columns):
-        self.df = pd.DataFrame(columns=columns)
+        self.filename = filename
+        self.df = pd.DataFrame(index=[0], columns=columns)
         try: 
             self.df.to_csv(filename, mode='w')
         except:
             self.df.to_csv(filename, mode='x')
         
     def create_user(self, id, username):
-        series = [id, username]
-        self.df._append(series)
+        self.df.loc[self.df.index] = [id, username]
+        self.df.index += 1
+        self.df.sort_index()
+        self.df.to_csv(self.filename, mode='w')
+        print(self.df)
     def delete_user(self, id):
         return 0
 db = Database('test', ['id', 'username'])
