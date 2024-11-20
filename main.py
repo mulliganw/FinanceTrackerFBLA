@@ -1,4 +1,4 @@
-import pandas
+import pandas as pd
 from typing import *
 import mysql.connector
 import socket
@@ -40,27 +40,17 @@ class Account :
         self.balance = balance
 
 class Database :
-    def __init__(self):
-        self.db = mysql.connector.connect(
-            host=f'{IP}',
-            user='root',
-            password='root',
-            port='3306',
-            database='financefbla'
-        )
-
+    def __init__(self, filename, columns):
+        self.df = pd.DataFrame(columns=columns)
+        try: 
+            self.df.to_csv(filename, mode='w')
+        except:
+            self.df.to_csv(filename, mode='x')
+        
     def create_user(self, id, username):
-        cursor = self.db.cursor()
-        sql = f"""INSERT INTO users(
-    id, username)
-    VALUES ({id},'{username}')"""
-        cursor.execute(sql)
-        cursor.execute('SELECT * FROM users')
-        print(cursor.fetchall())
-
+        series = [id, username]
+        self.df._append(series)
     def delete_user(self, id):
-        cursor = self.db.cursor()
-        cursor.execute(f'DELETE FROM users WHERE id={id}')
-        print(cursor.fetchall())
-db = Database()
+        return 0
+db = Database('test', ['id', 'username'])
 db.create_user(1, 'BillyMulligan')
