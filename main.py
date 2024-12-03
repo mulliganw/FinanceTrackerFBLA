@@ -42,19 +42,28 @@ class Account :
 class Database :
     def __init__(self, filename, columns):
         self.filename = filename
-        self.df = pd.DataFrame(index=[0], columns=columns)
         try: 
-            self.df.to_csv(filename, mode='w')
+            self.df = pd.read_csv(filename, index=False)
         except:
-            self.df.to_csv(filename, mode='x')
-        
-    def create_user(self, id, username):
-        self.df.loc[self.df.index] = [id, username]
-        self.df.index += 1
+            self.df = pd.DataFrame(columns=columns)
+            try: 
+                self.df.to_csv(filename, mode='w')
+            except:
+                self.df.to_csv(filename, mode='x')
+        self.current_index = len(self.df.index)
+
+    def create_user(self, username):
+        index = len(self.df)
+        self.df.loc[index, 'id'] = index + 1
+        self.df.loc[index, 'username'] = username
+        self.current_index += 1
+        self.df.to_csv(self.filename, mode='w')
+
+    def delete_user(self, id):
+        self.df.drop(id)
         self.df.sort_index()
         self.df.to_csv(self.filename, mode='w')
-        print(self.df)
-    def delete_user(self, id):
-        return 0
-db = Database('test', ['id', 'username'])
-db.create_user(1, 'BillyMulligan')
+
+db = Database('test.csv', ['id', 'username'])
+db.create_user('BillyMulligan')
+print(db.df)
