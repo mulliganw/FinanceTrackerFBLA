@@ -30,7 +30,9 @@ class Database :
             self.df.loc[index, str(cols[i])] = values[i]
         self.df.to_csv(self.filename)   
 
+    #TODO: test
     def remove_row(self, specifier) :
+        # Get the index of the specific row using .loc
         index = self.df.loc(self.df[specifier])
         self.df.drop(index)
         self.df.to_csv(self.filename)
@@ -65,6 +67,9 @@ class User :
             print('Couldn\'t create account, make sure your input is valid!')
         return account
 
+    def __str__(self) :
+        return f'User ID: {self.id}\n    Username: {self.name}\n    Password: {self.password}'
+    
 class Transaction :
     def __init__(self, user, amount, date, time=None) :
         self.id = transactions.get_index()
@@ -89,52 +94,68 @@ class Account :
     def __str__(self):
         return f'Account #{self.id}:\n   User: {self.user}\n   Balance: {self.balance}\n    Type: {self.type}'
     
-# TODO: comment
 def start() : 
     answer = str(input('What would you like to do?\n\n1. Login\n2. Register User\n3. Make an account\n4. Enter a transaction'))
     match answer :
         case '1' :
-            username = input('Enter your username: ')
-            while not username in users.df['username'].values : 
-                username = input('User does not exist, stop program and create a new user instead.')
-            user_index = users.df.index[users.df['username'] == username]
-            password = input('Enter your password: ')
-            while password != users.df.loc[user_index, 'password'].tolist()[0] : 
-                password = input('Incorrect password, re-enter password')
-            print('Correct password entered, continuing to homepage.')
+            login_page()
         case '2' : 
-            username = input('Enter username: ')
-            while username in users.df['username'].values : 
-                username = input('User already exists, re-enter username: ')
-            password = input('Enter password: ')
-            new_user = User(username, password)
-            print(f'User created! Info:\n\n{new_user}')
+            register_page()
         case '3' : 
-            user = input('Enter the user this account will be used by: ')
-            balance = input('Enter the balance of this account: ')
-            type = input('What type of account will it be? (Checking, Savings, etc.) ')
-            new_account = Account(user, balance, type) 
-            print(f'Account created! Info:\n\n{new_account}')
+            accounts_page()
         case '4' :
-            user = input('Enter the user this account will be used by: ')
-            amount = input('Enter the amount of the transaction (No dollar sign): ')
-            date = input('Enter the date of the transaction (DD/MM/YY): ')
-            time = input('Enter the time of the transaction (HH:MM:SS): ')
-            new_transaction = Transaction(user, amount, date, time)
-            print(f'Transaction created! Info:\n\n{new_transaction}')
+            transactions_page()
         case _ :
             print("Enter 1-4!")
             start()
 
-# TODO: implement
 def login_page() :
-    pass
+    print(users.df)
+    username = input('Enter your username: ')
+    # While the user doesn't exist, prompt the user for a different name
+    while not username in users.df['username'].values : 
+        username = input('User does not exist, stop program and create a new user or re-enter username: ')
+    # get the index of the user in the DataFrame by searching the users DataFrame for the username the user entered.
+    user_index = users.df.index[users.df['username'] == username]
+    password = input('Enter your password: ')
+    # get the correct password by using the .loc DataFrame function to locate the password at a given index.
+    correct_password = users.df.loc[user_index, 'password'].tolist()[0]
+    while password != correct_password : 
+        password = input('Incorrect password, re-enter password')
+    print('Correct password entered, continuing to homepage.')
+
 def register_page() : 
-    pass 
-def home_page() :
-    pass
+    username = input('Enter username: ')
+    # if the username already exists, tell them to enter a different one or login
+    while username in users.df['username'].values : 
+        username = input('User already exists, re-enter username: ')
+    password = input('Enter password: ')
+    new_user = User(username, password)
+    print(f'User created! Info:\n\n{new_user}') 
+    
 def accounts_page() :
+    user = input('Enter the user this account will be used by: ')
+    balance = input('Enter the balance of this account: ')
+    type = input('What type of account will it be? (Checking, Savings, etc.) ')
+    new_account = Account(user, balance, type) 
+    print(f'Account created! Info:\n\n{new_account}')
+
+def transactions_page() :
+    user = input('Enter the user this account will be used by: ')
+    amount = input('Enter the amount of the transaction (No dollar sign): ')
+    date = input('Enter the date of the transaction (DD/MM/YY): ')
+    time = input('Enter the time of the transaction (HH:MM:SS): ')
+    new_transaction = Transaction(user, amount, date, time)
+    print(f'Transaction created! Info:\n\n{new_transaction}')
+
+def home_page(): 
     pass
-def transactions_page(): 
-    pass
+
+def bool_decision(prompt, option_1, option_2) : 
+    option_1 = option_1.lower()
+    decision = str(input(prompt))
+    while decision != option_1 and decision != option_2 :
+        decision = input('Invalid decision, re-enter with proper format: ')
+    return decision
+    
 start()
