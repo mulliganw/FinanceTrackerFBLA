@@ -20,20 +20,20 @@ class Database :
     def get_index(self) :
         return len(self.df)
     
-    # adds a new row to a database instance
-    def write_row(self, data, cols) :
+    # adds a new row to a database instance; payload is a dict with cols and values
+    def write_row(self, payload) :
         # make sure the length of cols is greater than the length of the data so there's no errors
-        if(len(cols) < len(data)) : 
-            return "Excessive data entered; did you make sure there was less data than there was columns?"
+        cols = list(payload.keys())
+        values = list(payload.values())
         index = self.get_index()
-        # TODO: change cols and data to be payload and as a dict
         for i in range(0, len(cols)) :
-            self.df.loc[index, str(cols[i])] = data[i]
-        self.df.to_csv(self.filename, mode='w')   
+            self.df.loc[index, str(cols[i])] = values[i]
+        self.df.to_csv(self.filename)   
 
-    # TODO: implement
-    def remove_row() :
-        return 0
+    def remove_row(self, specifier) :
+        index = self.df.loc(self.df[specifier])
+        self.df.drop(index)
+        self.df.to_csv(self.filename)
 
 # Create the three main databases
 users = Database('Users.csv', ['user_id', 'username'])
@@ -56,26 +56,34 @@ class User :
         return transaction
     
     def create_account(self, balance=0, type='checking') :
-        account = Account(self, balance, type)
-        self.accounts.append(account)
+        try :
+            account = Account(self, balance, type)
+            self.accounts.append(account)
+        except: 
+            print('Couldn\'t create account, make sure your input is valid!')
         return account
 
-# TODO: update this to immediately add it to the accounts db
+# TODO: update this to immediately add it to the transactions db
 class Transaction :
     def __init__(self, user, amount, time=None) :
         self.id = transactions.get_index()
         self.user = user
         self.amount = amount
         self.time = time
-        self.location = location
 
+    def __str__(self):
+        return f'Transaction #{self.id}: \n   User: {self.user}\n    Amount: {self.amount}\n    Time: {self.time}'
+
+# TODO: update this to immediately add it to the accounts db
 class Account : 
-    # TODO: update this to immediately add it to the accounts db
     def __init__(self, user, balance, type) :
         self.id = accounts.get_index()
         self.user = user
         self.balance = balance
         self.type = type
 
-# TODO: set up test cases with simple terminal input
+    def __str__(self):
+        return f'Account #{self.id}:\n   User: {self.user}\n   Balance: {self.balance}\n    Type: {self.type}'
+    
+# TODO: set up test cases with simple terminal input 
 billy = User('Billy')
