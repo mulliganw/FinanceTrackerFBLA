@@ -1,60 +1,19 @@
 import pandas as pd
-from typing import *
 
 # TODO: URGENT!!!! PARSE CSV DATA BACK TO AN ARRAY OF USER OBJECTS
-class Database :
-    # when a database is created, check to see if it already exists. if it does, read it, if it doesn't, create it
-    def __init__(self, filename, columns):
-        self.filename = filename
-        self.columns = columns
-        # attempt to read a stored csv with the requested filename
-        try: 
-            self.df = pd.read_csv(filename).drop(['Unnamed: 0'],axis=1)
-        # if it doesn't work, say so and make a new DataFrame for it
-        except:
-            self.df = pd.DataFrame(columns=columns)
-            print('failed to read csv')
-            # create a new csv with the requested filename since it doesn't exist
-            self.df.to_csv(filename, mode='x')
-        self.current_index = len(self.df)
-    
-    def get_index(self) :
-        return len(self.df)
-    
-    # adds a new row to a database instance; payload is a dict with cols and values
-    def write_row(self, payload) :
-        # make sure the length of cols is greater than the length of the data so there's no errors
-        cols = list(payload.keys())
-        values = list(payload.values())
-        index = self.get_index()
-        for i in range(0, len(cols)) :
-            self.df.loc[index, str(cols[i])] = values[i]
-        self.df.to_csv(self.filename)   
-
-    #TODO: test
-    def remove_row(self, specifier) :
-        # Get the index of the specific row using .loc
-        index = self.df.loc(self.df[specifier])
-        self.df.drop(index)
-        self.df.to_csv(self.filename)
-
-# Create the three main databases
-users = Database('Users.csv', ['user_id', 'username', 'password'])
-accounts = Database('Accounts.csv', ['account_id', 'user', 'balance', 'account_type'])
-transactions = Database('Transactions.csv', ['user', 'amount', 'date', 'time'])
 
 class User : 
     def __init__(self, username, password) :
-        self.id = users.get_index()
+        self.id = users.get_last_index()
         self.username = username
         self.password = password
-        # write all the info to the database
-        users.write_row({'user_id' : self.id, 'username' : self.username, 'password' : password})  
-        # TODO: implement these without the make_transaction or create_account methods, either that or make login
         self.transactions = []
         self.accounts = []
+        # if it doesn't exist, write it to the csv
+        if self.username in users.df['username'].values :
+            users.write_row({'user_id': self.id, 'username': self.username, 'password': password})
 
-    # The following two methods are abstracted to the User class so that a user is included by default.
+            # The following two methods are abstracted to the User class so that a user is included by default.
     def make_transaction(self, date, amount, time=None) :
         transaction = Transaction(self, date, amount, time)
         self.transactions.append(transaction)
@@ -74,7 +33,7 @@ class User :
     
 class Transaction :
     def __init__(self, user, amount, date, time=None) :
-        self.id = transactions.get_index()
+        self.id = transactions.get_last_index()
         self.user = user
         self.amount = amount
         self.date = date
@@ -87,7 +46,7 @@ class Transaction :
 
 class Account : 
     def __init__(self, user, balance, type) :
-        self.id = accounts.get_index()
+        self.id = accounts.get_last_index()
         self.user = user
         self.balance = balance
         self.type = type
@@ -95,7 +54,75 @@ class Account :
 
     def __str__(self):
         return f'Account #{self.id}:\n   User: {self.user}\n   Balance: {self.balance}\n    Type: {self.type}'
-    
+
+class Database:
+    # when a database is created, check to see if it already exists. if it does, read it, if it doesn't, create it
+    def __init__(self, filename, columns):
+        self.filename = filename
+        self.columns = columns
+        # attempt to read a stored csv with the requested filename
+        try:
+            self.df = pd.read_csv(filename).drop(['Unnamed: 0'], axis=1)
+        # if it doesn't work, say so and make a new DataFrame for it
+        except:
+            self.df = pd.DataFrame(columns=columns)
+            print('Failed to read csv.')
+            # create a new csv with the requested filename since it doesn't exist
+            self.df.to_csv(filename, mode='x')
+        self.current_index = len(self.df)
+
+    def get_last_index(self):
+        return len(self.df)
+
+    # adds a new row to a database instance; payload is a dict with cols and values
+    def write_row(self, payload):
+        # make sure the length of cols is greater than the length of the data so there's no errors
+        cols = list(payload.keys())
+        values = list(payload.values())
+        index = self.get_last_index()
+        for i in range(0, len(cols)):
+            self.df.loc[index, str(cols[i])] = values[i]
+        self.df.to_csv(self.filename)
+
+        # TODO: test
+
+    def remove_row(self, specifier):
+        # Get the index of the specific row using .loc
+        index = self.df.loc(self.df[specifier])
+        self.df.drop(index)
+        self.df.to_csv(self.filename)
+
+    def parse_objects(self):
+        arr_type = self.filename[0:1]
+        matrix = self.df.to_numpy()
+        for i in range(0, len(matrix)):
+            vals = []
+            for j in range(1, len(matrix[i])):
+                vals += matrix[i][j]
+            match arr_type:
+                case 'U':
+                    user_obj_array.append(User(vals[0], vals[1]))
+                case 'A':
+                    account_obj_array.append(Account(vals[0], vals[1], vals[2]))
+                case 'T':
+                    transaction_obj_array.append(Transaction(vals[0], vals[1], vals[2], vals[3]))
+
+
+# Create 3 object arrays to restore lost variables when program is stopped.
+user_obj_array = []
+account_obj_array = []
+transaction_obj_array = []
+
+# Create the three main databases and parse them to the object arrays
+users = Database('Users.csv', ['user_id', 'username', 'password'])
+users.parse_objects()
+accounts = Database('Accounts.csv', ['account_id', 'user', 'balance', 'account_type'])
+accounts.parse_objects()
+transactions = Database('Transactions.csv', ['transaction_id', 'user', 'amount', 'date', 'time'])
+transactions.parse_objects()
+
+# UI AND UEx START HERE
+
 def start() : 
     answer = str(input('What would you like to do?\n\n1. Login\n2. Register'))
     match answer :
@@ -107,14 +134,13 @@ def start() :
             print("Enter 1 or 2!")
             start()
 
-# UI AND UEx START HERE 
 
 def login_page() :
     username = input('Enter your username: ')
     # While the user doesn't exist, ask the user how they'd like to proceed
     while not username in users.df['username'].values : 
         response = bool_decision('User does not exist, either\n1. Try again\n\nor\n\n2. Register a new  user? ', '1', '2')
-        if(response == '1') :
+        if response == '1':
             username = input('Enter your username: ')
         else :
             #TODO: go back to login page after done registering
@@ -128,6 +154,7 @@ def login_page() :
     while password != correct_password : 
         password = input('Incorrect password, re-enter password')
     print('Correct password entered, continuing to homepage.')
+    # TODO: add user param here after parsing is figured out
     home_page()
 
 def register_page() : 
@@ -163,7 +190,7 @@ def home_page(user) :
         case '1' :
             transactions_page(user)
         case '2' :
-            pass
+            accounts_page(user)
         case '3' :
             reports_page(user)
         case '4' :
@@ -194,5 +221,5 @@ def bool_decision(prompt, option_1, option_2) :
         decision = input('Invalid decision, re-enter with proper format: ').lower()
     return decision
 
-print(users.df[0:1])
+print(user_obj_array[0])
 start()
