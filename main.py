@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import *
 
+# TODO: URGENT!!!! PARSE CSV DATA BACK TO AN ARRAY OF USER OBJECTS
 class Database :
     # when a database is created, check to see if it already exists. if it does, read it, if it doesn't, create it
     def __init__(self, filename, columns):
@@ -54,8 +55,8 @@ class User :
         self.accounts = []
 
     # The following two methods are abstracted to the User class so that a user is included by default.
-    def make_transaction(self, amount, time=None) :
-        transaction = Transaction(self, amount, time)
+    def make_transaction(self, date, amount, time=None) :
+        transaction = Transaction(self, date, amount, time)
         self.transactions.append(transaction)
         return transaction
     
@@ -64,11 +65,12 @@ class User :
             account = Account(self, balance, type)
             self.accounts.append(account)
         except: 
-            print('Couldn\'t create account, make sure your input is valid!')
+            print('Couldn\'t create account, make sure your input is valid and try again!')
+            self.create_account(self, balance, type)
         return account
 
     def __str__(self) :
-        return f'User ID: {self.id}\n    Username: {self.name}\n    Password: {self.password}'
+        return f'User ID: {self.id}\n    Username: {self.username}\n    Password: {self.password}'
     
 class Transaction :
     def __init__(self, user, amount, date, time=None) :
@@ -95,26 +97,29 @@ class Account :
         return f'Account #{self.id}:\n   User: {self.user}\n   Balance: {self.balance}\n    Type: {self.type}'
     
 def start() : 
-    answer = str(input('What would you like to do?\n\n1. Login\n2. Register User\n3. Make an account\n4. Enter a transaction'))
+    answer = str(input('What would you like to do?\n\n1. Login\n2. Register'))
     match answer :
         case '1' :
             login_page()
         case '2' : 
             register_page()
-        case '3' : 
-            accounts_page()
-        case '4' :
-            transactions_page()
         case _ :
-            print("Enter 1-4!")
+            print("Enter 1 or 2!")
             start()
 
+# UI AND UEx START HERE 
+
 def login_page() :
-    print(users.df)
     username = input('Enter your username: ')
-    # While the user doesn't exist, prompt the user for a different name
+    # While the user doesn't exist, ask the user how they'd like to proceed
     while not username in users.df['username'].values : 
-        username = input('User does not exist, stop program and create a new user or re-enter username: ')
+        response = bool_decision('User does not exist, either\n1. Try again\n\nor\n\n2. Register a new  user? ', '1', '2')
+        if(response == '1') :
+            username = input('Enter your username: ')
+        else :
+            #TODO: go back to login page after done registering
+            register_page()
+            exit()
     # get the index of the user in the DataFrame by searching the users DataFrame for the username the user entered.
     user_index = users.df.index[users.df['username'] == username]
     password = input('Enter your password: ')
@@ -123,6 +128,7 @@ def login_page() :
     while password != correct_password : 
         password = input('Incorrect password, re-enter password')
     print('Correct password entered, continuing to homepage.')
+    home_page()
 
 def register_page() : 
     username = input('Enter username: ')
@@ -133,29 +139,60 @@ def register_page() :
     new_user = User(username, password)
     print(f'User created! Info:\n\n{new_user}') 
     
-def accounts_page() :
-    user = input('Enter the user this account will be used by: ')
-    balance = input('Enter the balance of this account: ')
+def accounts_page(user) :
+    #TODO: prompt user if they want to create an account or add money to an account
+    balance = input('Enter the starting balance of this account: ')
     type = input('What type of account will it be? (Checking, Savings, etc.) ')
     new_account = Account(user, balance, type) 
     print(f'Account created! Info:\n\n{new_account}')
 
-def transactions_page() :
-    user = input('Enter the user this account will be used by: ')
+def transactions_page(user) :
     amount = input('Enter the amount of the transaction (No dollar sign): ')
     date = input('Enter the date of the transaction (DD/MM/YY): ')
-    time = input('Enter the time of the transaction (HH:MM:SS): ')
-    new_transaction = Transaction(user, amount, date, time)
+    time_answer = bool_decision('Enter a time? (Y/N): ', 'Y', 'N')
+    if time_answer == 'y' :
+        time = input('Enter time of transaction (HH:MM:SS):')
+    new_transaction = user.make_transaction(amount, date, time)
     print(f'Transaction created! Info:\n\n{new_transaction}')
 
-def home_page(): 
-    pass
+#TODO: implement and fill out cases
+def home_page(user) : 
+    print(f'Welcome {user}, what would you like to do?')
+    request = input('1. Make a transaction\n2. Open an account\n3. View reports\n4. Help :(')
+    match request :
+        case '1' :
+            transactions_page(user)
+        case '2' :
+            pass
+        case '3' :
+            reports_page(user)
+        case '4' :
+            pass
+        case _ :
+            pass
 
+#TODO : implement and fill out cases
+def reports_page(user) :
+    answer = input('What reports would you like to view?\n\n1. Individual Account Summary\n2. Full Accounts Summary\n3. Transaction History')
+    match answer : 
+        case '1' :
+            account = input('Which account would you like to view? ')
+            for i in range(0, len(user.accounts)) :
+                print(user.accounts[i])
+        case '2' : 
+            pass
+        case '3' :
+            pass
+
+# This function exists to validate user input and make sure no invalid decisions are entered.
+# It also cleans up my code so I don't have to put a while loop everywhere.
 def bool_decision(prompt, option_1, option_2) : 
     option_1 = option_1.lower()
-    decision = str(input(prompt))
+    option_2 = option_2.lower()
+    decision = str(input(prompt)).lower()
     while decision != option_1 and decision != option_2 :
-        decision = input('Invalid decision, re-enter with proper format: ')
+        decision = input('Invalid decision, re-enter with proper format: ').lower()
     return decision
-    
+
+print(users.df[0:1])
 start()
