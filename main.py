@@ -102,17 +102,17 @@ class Database:
                 vals.append(matrix[i][j])
             match arr_type:
                 case 'U':
-                    # I did this because I have to parse back in the actual user objects, not just the names.
-                    # Having a dict with the username and the memory address makes it easier to find the actual object. 
                     new_user = User(vals[0], vals[1], vals[2], False)
-                    user_obj_dict[new_user.username] = id(new_user)
+                    user_obj_dict[new_user.username] = new_user
+                    user_obj_array.append(new_user)
                 case 'A':
                     account_obj_array.append(Account(vals[0], user_obj_dict[vals[1]], vals[2], vals[3], False))
                 case 'T':
                     transaction_obj_array.append(Transaction(vals[0], user_obj_dict[vals[1]], vals[2], vals[3], vals[4], False))
 
-# Create 3 object arrays to restore lost variables when program is stopped.
+# Create 3 object arrays and 1 object dict to restore lost variables when program is stopped.
 user_obj_dict = {}
+user_obj_array = []
 account_obj_array = []
 transaction_obj_array = []
 
