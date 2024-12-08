@@ -1,59 +1,52 @@
 import pandas as pd
+import numpy as np
 
-# TODO: URGENT!!!! PARSE CSV DATA BACK TO AN ARRAY OF USER OBJECTS
+#TODO: see lines 104, 163
 
 class User : 
-    def __init__(self, username, password) :
-        self.id = users.get_last_index()
+    def __init__(self, id, username, password, write=True) :
+        self.id = id
         self.username = username
         self.password = password
         self.transactions = []
         self.accounts = []
-        # if it doesn't exist, write it to the csv
-        if self.username in users.df['username'].values :
+        # write it to the database unless otherwise instructed
+        if write :
             users.write_row({'user_id': self.id, 'username': self.username, 'password': password})
 
-            # The following two methods are abstracted to the User class so that a user is included by default.
-    def make_transaction(self, date, amount, time=None) :
-        transaction = Transaction(self, date, amount, time)
-        self.transactions.append(transaction)
-        return transaction
-    
-    def create_account(self, balance=0, type='checking') :
-        try :
-            account = Account(self, balance, type)
-            self.accounts.append(account)
-        except: 
-            print('Couldn\'t create account, make sure your input is valid and try again!')
-            self.create_account(self, balance, type)
-        return account
-
     def __str__(self) :
-        return f'User ID: {self.id}\n    Username: {self.username}\n    Password: {self.password}'
+        return self.username
     
 class Transaction :
-    def __init__(self, user, amount, date, time=None) :
-        self.id = transactions.get_last_index()
+    def __init__(self, id, user, amount, date, time=None, write=True) :
+        self.id = id
         self.user = user
         self.amount = amount
         self.date = date
         self.time = time
-        transactions.write_row({'id' : self.id, 'user' : self.user, 'amount' : self.amount, 
-        'date' : self.date, 'time' : self.time})
+        self.user.transactions.append(self)
+        if write :
+            transactions.write_row({'id' : self.id, 'user' : self.user, 'amount' : self.amount, 
+            'date' : self.date, 'time' : self.time})
 
     def __str__(self):
         return f'Transaction #{self.id}: \n    User: {self.user}\n    Amount: {self.amount}\n    Date: {self.date}\n    Time: {self.time}'
 
 class Account : 
-    def __init__(self, user, balance, type) :
-        self.id = accounts.get_last_index()
+    def __init__(self, id, user, balance, type, write=True) :
+        self.id = id
         self.user = user
         self.balance = balance
         self.type = type
-        accounts.write_row({'account_id' : self.id, 'user' : self.user, 'balance' : self.balance, 'account_type' : self.type})
+        self.user.accounts.append(self)
+        if write :
+            accounts.write_row({'account_id' : self.id, 'user' : self.user, 'balance' : self.balance, 'account_type' : self.type})
+
+    def add_money(self, amount) :
+        self.balance += amount
 
     def __str__(self):
-        return f'Account #{self.id}:\n   User: {self.user}\n   Balance: {self.balance}\n    Type: {self.type}'
+        return f'Account #{self.id}:\n   User: {self.user.username}\n   Balance: {self.balance}\n   Type: {self.type}'
 
 class Database:
     # when a database is created, check to see if it already exists. if it does, read it, if it doesn't, create it
@@ -92,24 +85,34 @@ class Database:
         self.df.drop(index)
         self.df.to_csv(self.filename)
 
+    # This method is extremely important. It restores all dead variables back to the program as soon as it is run.
+    # Nothing in this program would be possible without this method, and it's made only more convenient by the fact that
+    # the index of the object array exactly matches the index of the dataframe, making searching and sorting very easy.
     def parse_objects(self):
+        # Get the first letter of the filename to find the type of database (could probably use a dict here)
         arr_type = self.filename[0:1]
+        # create a 2d array from the dataframe to more easily get the information
         matrix = self.df.to_numpy()
+        print(matrix)
+        # loop through the rows and columns of the 2d array, adding the individual values to their own array and then adding 
+        # the objects they create to their own array.
         for i in range(0, len(matrix)):
             vals = []
-            for j in range(1, len(matrix[i])):
-                vals += matrix[i][j]
+            for j in range(0, len(matrix[i])):
+                vals.append(matrix[i][j])
             match arr_type:
                 case 'U':
-                    user_obj_array.append(User(vals[0], vals[1]))
+                    # I did this because I have to parse back in the actual user objects, not just the names.
+                    # Having a dict with the username and the memory address makes it easier to find the actual object. 
+                    new_user = User(vals[0], vals[1], vals[2], False)
+                    user_obj_dict[new_user.username] = id(new_user)
                 case 'A':
-                    account_obj_array.append(Account(vals[0], vals[1], vals[2]))
+                    account_obj_array.append(Account(vals[0], user_obj_dict[vals[1]], vals[2], vals[3], False))
                 case 'T':
-                    transaction_obj_array.append(Transaction(vals[0], vals[1], vals[2], vals[3]))
-
+                    transaction_obj_array.append(Transaction(vals[0], user_obj_dict[vals[1]], vals[2], vals[3], vals[4], False))
 
 # Create 3 object arrays to restore lost variables when program is stopped.
-user_obj_array = []
+user_obj_dict = {}
 account_obj_array = []
 transaction_obj_array = []
 
@@ -140,7 +143,7 @@ def login_page() :
     # While the user doesn't exist, ask the user how they'd like to proceed
     while not username in users.df['username'].values : 
         response = bool_decision('User does not exist, either\n1. Try again\n\nor\n\n2. Register a new  user? ', '1', '2')
-        if response == '1':
+        if response == '1' :
             username = input('Enter your username: ')
         else :
             #TODO: go back to login page after done registering
@@ -154,37 +157,61 @@ def login_page() :
     while password != correct_password : 
         password = input('Incorrect password, re-enter password')
     print('Correct password entered, continuing to homepage.')
-    # TODO: add user param here after parsing is figured out
-    home_page()
+    # TODO: fix this stupid line that doesn't make any sense
+    index = np.where(users.df['username'] == username)[0][0]
+    # TODO: fix this to actually return the user, not the index or whatever its returning
+    home_page(user_obj_array[index])
 
 def register_page() : 
+    id = users.get_last_index()
     username = input('Enter username: ')
     # if the username already exists, tell them to enter a different one or login
     while username in users.df['username'].values : 
         username = input('User already exists, re-enter username: ')
     password = input('Enter password: ')
-    new_user = User(username, password)
+    new_user = User(id, username, password)
     print(f'User created! Info:\n\n{new_user}') 
     
 def accounts_page(user) :
-    #TODO: prompt user if they want to create an account or add money to an account
-    balance = input('Enter the starting balance of this account: ')
-    type = input('What type of account will it be? (Checking, Savings, etc.) ')
-    new_account = Account(user, balance, type) 
-    print(f'Account created! Info:\n\n{new_account}')
+    print(user.accounts)
+    answer = bool_decision('Would you like to...\n\n1. Create an account\nor\n2. Add money to an existing account?', '1', '2')
+    if(answer == '1') :
+        id = accounts.get_last_index()
+        balance = input('Enter the starting balance of this account: ')
+        type = input('What type of account will it be? (Checking, Savings, etc.) ')
+        new_account = Account(id, user, balance, type) 
+        print(f'Account created! Info:\n\n{new_account}')
+    else :
+        # Create a dict to prompt the user with a number instead of an account object
+        accounts_dict = {}
+        print('Which account would you like to add money to?')
+        # Loop through the user's account dictionary and add each account to the dict 
+        for i in range(0, len(user.accounts)) :
+            print(f'{i + 1}. Account #{user.accounts[i].id}')
+            accounts_dict[i + 1] = user.accounts[i]
+        print(user.accounts)
+        account = int(input())
+        # If the user doesn't enter a valid number, prompt them to enter a correct one. 
+        while account not in accounts_dict.keys():
+            account = int(input('Account does not exist, make sure you\'re entering the number provided before the account #!'))
+        account_number = accounts_dict[account].id
+        amount = float(input(f'How much money would you like to deposit to account #{account_number}? '))
+        accounts_dict[account].add_money(amount)   
+        print(f'Success! Status of account: \n{accounts_dict[account]}') 
 
 def transactions_page(user) :
+    id = transactions.get_last_index()
     amount = input('Enter the amount of the transaction (No dollar sign): ')
     date = input('Enter the date of the transaction (DD/MM/YY): ')
     time_answer = bool_decision('Enter a time? (Y/N): ', 'Y', 'N')
     if time_answer == 'y' :
         time = input('Enter time of transaction (HH:MM:SS):')
-    new_transaction = user.make_transaction(amount, date, time)
+    new_transaction = Transaction(id, user, amount, date, time)
     print(f'Transaction created! Info:\n\n{new_transaction}')
 
 #TODO: implement and fill out cases
 def home_page(user) : 
-    print(f'Welcome {user}, what would you like to do?')
+    print(f'Welcome {user.username}, what would you like to do?')
     request = input('1. Make a transaction\n2. Open an account\n3. View reports\n4. Help :(')
     match request :
         case '1' :
@@ -221,5 +248,4 @@ def bool_decision(prompt, option_1, option_2) :
         decision = input('Invalid decision, re-enter with proper format: ').lower()
     return decision
 
-print(user_obj_array[0])
 start()
