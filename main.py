@@ -1,13 +1,20 @@
+# exists because i know what i'm doing and the scope of this project is small enough to ignore futurewarnings.
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+# get the current date and time for viewing transaction history
+import datetime
+
 import pandas as pd
 import numpy as np
 
-#TODO: see lines 104, 163
+# TODO: monday: help page, line 80
 
 class User : 
     def __init__(self, id, username, password, write=True) :
-        self.id = id
-        self.username = username
-        self.password = password
+        self.id = int(id)
+        self.username = str(username)
+        self.password = str(password)
         self.transactions = []
         self.accounts = []
         # write it to the database unless otherwise instructed
@@ -18,12 +25,12 @@ class User :
         return self.username
     
 class Transaction :
-    def __init__(self, id, user, amount, date, time=None, write=True) :
-        self.id = id
+    def __init__(self, id, user, amount, write=True) :
+        self.id = int(id)
         self.user = user
         self.amount = amount
-        self.date = date
-        self.time = time
+        self.date = datetime.datetime.now().date().__str__()
+        self.time = datetime.datetime.now().strftime("%H:%M:%S")
         self.user.transactions.append(self)
         if write :
             transactions.write_row({'id' : self.id, 'user' : self.user, 'amount' : self.amount, 
@@ -34,7 +41,7 @@ class Transaction :
 
 class Account : 
     def __init__(self, id, user, balance, type, write=True) :
-        self.id = id
+        self.id = int(id)
         self.user = user
         self.balance = balance
         self.type = type
@@ -93,8 +100,7 @@ class Database:
         arr_type = self.filename[0:1]
         # create a 2d array from the dataframe to more easily get the information
         matrix = self.df.to_numpy()
-        print(matrix)
-        # loop through the rows and columns of the 2d array, adding the individual values to their own array and then adding 
+        # loop through the rows and columns of the 2d array, adding the individual values to their own array and then adding
         # the objects they create to their own array.
         for i in range(0, len(matrix)):
             vals = []
@@ -108,7 +114,7 @@ class Database:
                 case 'A':
                     account_obj_array.append(Account(vals[0], user_obj_dict[vals[1]], vals[2], vals[3], False))
                 case 'T':
-                    transaction_obj_array.append(Transaction(vals[0], user_obj_dict[vals[1]], vals[2], vals[3], vals[4], False))
+                    transaction_obj_array.append(Transaction(vals[4], user_obj_dict[vals[0]], vals[1], False))
 
 # Create 3 object arrays and 1 object dict to restore lost variables when program is stopped.
 user_obj_dict = {}
@@ -146,7 +152,6 @@ def login_page() :
         if response == '1' :
             username = input('Enter your username: ')
         else :
-            #TODO: go back to login page after done registering
             register_page()
             exit()
     # get the index of the user in the DataFrame by searching the users DataFrame for the username the user entered.
@@ -157,9 +162,8 @@ def login_page() :
     while password != correct_password : 
         password = input('Incorrect password, re-enter password')
     print('Correct password entered, continuing to homepage.')
-    # TODO: fix this stupid line that doesn't make any sense
+    # Get the user from the dataframe using numpy's .where function then access the index from the Index object it returns (an Index is just a fancy array)
     index = np.where(users.df['username'] == username)[0][0]
-    # TODO: fix this to actually return the user, not the index or whatever its returning
     home_page(user_obj_array[index])
 
 def register_page() : 
@@ -170,12 +174,12 @@ def register_page() :
         username = input('User already exists, re-enter username: ')
     password = input('Enter password: ')
     new_user = User(id, username, password)
-    print(f'User created! Info:\n\n{new_user}') 
+    print(f'User created! Info:\n\n{new_user}\n\n Proceeding to hompage')
+    home_page(new_user)
     
 def accounts_page(user) :
-    print(user.accounts)
     answer = bool_decision('Would you like to...\n\n1. Create an account\nor\n2. Add money to an existing account?', '1', '2')
-    if(answer == '1') :
+    if answer == '1':
         id = accounts.get_last_index()
         balance = input('Enter the starting balance of this account: ')
         type = input('What type of account will it be? (Checking, Savings, etc.) ')
@@ -189,30 +193,32 @@ def accounts_page(user) :
         for i in range(0, len(user.accounts)) :
             print(f'{i + 1}. Account #{user.accounts[i].id}')
             accounts_dict[i + 1] = user.accounts[i]
-        print(user.accounts)
         account = int(input())
         # If the user doesn't enter a valid number, prompt them to enter a correct one. 
         while account not in accounts_dict.keys():
             account = int(input('Account does not exist, make sure you\'re entering the number provided before the account #!'))
         account_number = accounts_dict[account].id
-        amount = float(input(f'How much money would you like to deposit to account #{account_number}? '))
-        accounts_dict[account].add_money(amount)   
-        print(f'Success! Status of account: \n{accounts_dict[account]}') 
+        try :
+            amount = float(input(f'How much money would you like to deposit to account #{account_number}? '))
+        except :
+            amount = float(input(f'Re-enter as a decimal number (No dollar sign): '))
+        accounts_dict[account].add_money(amount)
+        print(f'Success! Status of account: \n{accounts_dict[account]}')
+    prompt_home(user)
 
 def transactions_page(user) :
-    id = transactions.get_last_index()
+    id = transactions.get_last_index() + 1
     amount = input('Enter the amount of the transaction (No dollar sign): ')
-    date = input('Enter the date of the transaction (DD/MM/YY): ')
-    time_answer = bool_decision('Enter a time? (Y/N): ', 'Y', 'N')
-    if time_answer == 'y' :
-        time = input('Enter time of transaction (HH:MM:SS):')
-    new_transaction = Transaction(id, user, amount, date, time)
+    while amount[0:1] == '$' :
+        amount = input('Re-enter amount without a dollar sign: ')
+    new_transaction = Transaction(id, user, amount)
     print(f'Transaction created! Info:\n\n{new_transaction}')
+    prompt_home(user)
 
-#TODO: implement and fill out cases
+#TODO: fill out help page, probably monday
 def home_page(user) : 
-    print(f'Welcome {user.username}, what would you like to do?')
-    request = input('1. Make a transaction\n2. Open an account\n3. View reports\n4. Help :(')
+    print(f'\nWelcome {user.username}, what would you like to do?')
+    request = input('1. Make a transaction\n2. Open an account\n3. View reports\n4. Help :(\n5. Logout')
     match request :
         case '1' :
             transactions_page(user)
@@ -222,22 +228,42 @@ def home_page(user) :
             reports_page(user)
         case '4' :
             pass
+        case '5' :
+            exit(0)
         case _ :
-            pass
+            print('Not a valid choice! try again!')
+            home_page(user)
+            exit()
 
-#TODO : implement and fill out cases
 def reports_page(user) :
     answer = input('What reports would you like to view?\n\n1. Individual Account Summary\n2. Full Accounts Summary\n3. Transaction History')
-    match answer : 
+    match answer :
         case '1' :
-            account = input('Which account would you like to view? ')
-            for i in range(0, len(user.accounts)) :
-                print(user.accounts[i])
-        case '2' : 
-            pass
-        case '3' :
-            pass
+            if len(user.accounts) == 0:
+                print('\nNo accounts for this user!')
+                prompt_home(user)
+            # Create a dict to prompt the user with a number instead of an account object
+            accounts_dict = {}
+            print('Enter account #: ')
+            # Loop through the user's account dictionary and add each account to the dict
+            for i in range(0, len(user.accounts)):
+                accounts_dict[i] = user.accounts[i]
+            account_num = int(input())
+            while account_num not in accounts_dict.keys() :
+                account_num = int(input('Not a valid account #, try again: '))
+            print(accounts_dict[account_num])
 
+        case '2' : 
+            for account in user.accounts :
+                print(f'{account}\n')
+        case '3' :
+            for transaction in user.transactions :
+                print(f'{transaction}\n')
+        case _ :
+            print('Not a valid choice! try again!')
+            reports_page(user)
+            exit()
+    prompt_home(user)
 # This function exists to validate user input and make sure no invalid decisions are entered.
 # It also cleans up my code so I don't have to put a while loop everywhere.
 def bool_decision(prompt, option_1, option_2) : 
@@ -247,5 +273,12 @@ def bool_decision(prompt, option_1, option_2) :
     while decision != option_1 and decision != option_2 :
         decision = input('Invalid decision, re-enter with proper format: ').lower()
     return decision
+
+def prompt_home(user) :
+    answer = bool_decision('1. Return to homepage\n2. Logout\n\n', '1','2')
+    if(answer == '1') :
+        home_page(user)
+    else:
+        exit(0)
 
 start()

@@ -1,3 +1,5 @@
-,account_id,user,balance,account_type,
-0,0.0,Billym7,0.0,Savings,
-1,1.0,Billym7,1000,Checking,
+,account_id,user,balance,account_type
+0,1,Billym7,0.0,Savings
+1,2,Billym7,1000.0,Checking
+2,3,Billym7,25.0,Custodial
+3,4,Billym7,2400.00,Investment
