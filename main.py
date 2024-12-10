@@ -5,10 +5,11 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 # get the current date and time for viewing transaction history
 import datetime
 
+#need to do this to sleep on the help page
+import time
+
 import pandas as pd
 import numpy as np
-
-# TODO: monday: help page, line 80
 
 class User : 
     def __init__(self, id, username, password, write=True) :
@@ -84,14 +85,6 @@ class Database:
             self.df.loc[index, str(cols[i])] = values[i]
         self.df.to_csv(self.filename)
 
-        # TODO: test
-
-    def remove_row(self, specifier):
-        # Get the index of the specific row using .loc
-        index = self.df.loc(self.df[specifier])
-        self.df.drop(index)
-        self.df.to_csv(self.filename)
-
     # This method is extremely important. It restores all dead variables back to the program as soon as it is run.
     # Nothing in this program would be possible without this method, and it's made only more convenient by the fact that
     # the index of the object array exactly matches the index of the dataframe, making searching and sorting very easy.
@@ -133,7 +126,7 @@ transactions.parse_objects()
 # UI AND UEx START HERE
 
 def start() : 
-    answer = str(input('What would you like to do?\n\n1. Login\n2. Register'))
+    answer = str(input('What would you like to do?\n\n1. Login\n2. Register\n'))
     match answer :
         case '1' :
             login_page()
@@ -148,7 +141,7 @@ def login_page() :
     username = input('Enter your username: ')
     # While the user doesn't exist, ask the user how they'd like to proceed
     while not username in users.df['username'].values : 
-        response = bool_decision('User does not exist, either\n1. Try again\n\nor\n\n2. Register a new  user? ', '1', '2')
+        response = bool_decision('User does not exist, either\n1. Try again\n\nor\n\n2. Register a new  user? \n', '1', '2')
         if response == '1' :
             username = input('Enter your username: ')
         else :
@@ -160,7 +153,7 @@ def login_page() :
     # get the correct password by using the .loc DataFrame function to locate the password at a given index.
     correct_password = users.df.loc[user_index, 'password'].tolist()[0]
     while password != correct_password : 
-        password = input('Incorrect password, re-enter password')
+        password = input('Incorrect password, re-enter password: ')
     print('Correct password entered, continuing to homepage.')
     # Get the user from the dataframe using numpy's .where function then access the index from the Index object it returns (an Index is just a fancy array)
     index = np.where(users.df['username'] == username)[0][0]
@@ -178,11 +171,11 @@ def register_page() :
     home_page(new_user)
     
 def accounts_page(user) :
-    answer = bool_decision('Would you like to...\n\n1. Create an account\nor\n2. Add money to an existing account?', '1', '2')
+    answer = bool_decision('Would you like to...\n\n1. Create an account\nor\n2. Add money to an existing account?\n', '1', '2')
     if answer == '1':
         id = accounts.get_last_index()
         balance = input('Enter the starting balance of this account: ')
-        type = input('What type of account will it be? (Checking, Savings, etc.) ')
+        type = input('What type of account will it be? (Checking, Savings, etc.) \n')
         new_account = Account(id, user, balance, type) 
         print(f'Account created! Info:\n\n{new_account}')
     else :
@@ -193,13 +186,13 @@ def accounts_page(user) :
         for i in range(0, len(user.accounts)) :
             print(f'{i + 1}. Account #{user.accounts[i].id}')
             accounts_dict[i + 1] = user.accounts[i]
-        account = int(input())
+        account = int(input('\n'))
         # If the user doesn't enter a valid number, prompt them to enter a correct one. 
         while account not in accounts_dict.keys():
-            account = int(input('Account does not exist, make sure you\'re entering the number provided before the account #!'))
+            account = int(input('Account does not exist, make sure you\'re entering the number provided before the account #!\n'))
         account_number = accounts_dict[account].id
         try :
-            amount = float(input(f'How much money would you like to deposit to account #{account_number}? '))
+            amount = float(input(f'How much money would you like to deposit to account #{account_number}? \n'))
         except :
             amount = float(input(f'Re-enter as a decimal number (No dollar sign): '))
         accounts_dict[account].add_money(amount)
@@ -218,7 +211,7 @@ def transactions_page(user) :
 #TODO: fill out help page, probably monday
 def home_page(user) : 
     print(f'\nWelcome {user.username}, what would you like to do?')
-    request = input('1. Make a transaction\n2. Open an account\n3. View reports\n4. Help :(\n5. Logout')
+    request = input('1. Make a transaction\n2. Open an account\n3. View reports\n4. Help :(\n5. Logout\n')
     match request :
         case '1' :
             transactions_page(user)
@@ -227,7 +220,7 @@ def home_page(user) :
         case '3' :
             reports_page(user)
         case '4' :
-            pass
+            help_page_home(user)
         case '5' :
             exit(0)
         case _ :
@@ -236,7 +229,7 @@ def home_page(user) :
             exit()
 
 def reports_page(user) :
-    answer = input('What reports would you like to view?\n\n1. Individual Account Summary\n2. Full Accounts Summary\n3. Transaction History')
+    answer = input('What reports would you like to view?\n\n1. Individual Account Summary\n2. Full Accounts Summary\n3. Transaction History\n')
     match answer :
         case '1' :
             if len(user.accounts) == 0:
@@ -248,7 +241,7 @@ def reports_page(user) :
             # Loop through the user's account dictionary and add each account to the dict
             for i in range(0, len(user.accounts)):
                 accounts_dict[i] = user.accounts[i]
-            account_num = int(input())
+            account_num = int(input('\n'))
             while account_num not in accounts_dict.keys() :
                 account_num = int(input('Not a valid account #, try again: '))
             print(accounts_dict[account_num])
@@ -264,6 +257,50 @@ def reports_page(user) :
             reports_page(user)
             exit()
     prompt_home(user)
+
+def help_page_home(user) :
+    answer = input('What would you like help with?\n\n1. General\n2. Accounts\n3. Transactions\n4. Reports\n5. Return to home\n')
+    match answer :
+        case '1' :
+            help_page_general(user)
+        case '2' : 
+            help_page_accounts(user)
+        case '3' :
+            help_page_transactions(user)
+        case '4' :
+            help_page_transactions(user)
+        case '5' :
+            home_page(user)
+        case _ : 
+            print('Enter a valid option! (1-3)')
+            help_page_home()
+
+def help_page_general(user) :
+    print(f'\nSelecting items\n   To select a field or item in the program, simply input the number at the beginning of the line.')
+    print('   Example:\n\n   To select Account #21 in the following list, simply type \'3\'.')
+    print('   1. Account #6\n   2. Account #42\n   3. Account #21')
+    time.sleep(5)
+    print('\nInputting fields\n   When inputting fields in this program, be sure to follow all instructions to make sure ')
+    print('   everything flows smoothy and headaches are avoided.\n')
+    time.sleep(5)
+    help_page_home(user)
+def help_page_accounts(user) :
+    print('Creating an account\n   Creating an account in this program is easy. Simply follow the instructions given in the accounts')
+    print('   page and an account number will be given to you.')
+    time.sleep(3)
+    print('Adding money to an existing account\n   By selecting the second option in the Accounts page, you\'ll be easily ')
+    print('   able to add any amount of money you\d like to your existing account. Select the account you want to add money to from the list ')
+    print('   of all of your accounts, then enter the amount of money in the format 000.00, with no beginning dollar sign ($)')
+    time.sleep(3)
+def help_page_transactions(user) :
+    print('Making a transaction\n   To make a transaction, simply go to the transactions page from the home page menu, select')
+    print('   \'Make a transaction\', and enter the required fields. The program will automatically fill out a date and time')
+    print('   so you can view it later in your transaction history, found on the reports page. ')
+    time.sleep(4)
+def help_page_reports(user) :
+    print('Viewing reports\n   To view a given report, head to the reports page from the home menu. There, select 1 for an Individual account summary,')
+    print('2 for a full summary of all accounts, or 3 to view your transaction history. ')
+    time.sleep(3)
 # This function exists to validate user input and make sure no invalid decisions are entered.
 # It also cleans up my code so I don't have to put a while loop everywhere.
 def bool_decision(prompt, option_1, option_2) : 
@@ -271,7 +308,7 @@ def bool_decision(prompt, option_1, option_2) :
     option_2 = option_2.lower()
     decision = str(input(prompt)).lower()
     while decision != option_1 and decision != option_2 :
-        decision = input('Invalid decision, re-enter with proper format: ').lower()
+        decision = input('Invalid decision, re-enter with proper format: \n').lower()
     return decision
 
 def prompt_home(user) :
