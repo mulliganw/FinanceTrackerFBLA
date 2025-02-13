@@ -1,4 +1,3 @@
-# exists because i know what i'm doing and the scope of this project is small enough to ignore futurewarnings.
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -292,15 +291,18 @@ def help_page_accounts(user) :
     print('   able to add any amount of money you\d like to your existing account. Select the account you want to add money to from the list ')
     print('   of all of your accounts, then enter the amount of money in the format 000.00, with no beginning dollar sign ($)')
     time.sleep(3)
+    help_page_home(user)
 def help_page_transactions(user) :
     print('Making a transaction\n   To make a transaction, simply go to the transactions page from the home page menu, select')
     print('   \'Make a transaction\', and enter the required fields. The program will automatically fill out a date and time')
     print('   so you can view it later in your transaction history, found on the reports page. ')
     time.sleep(4)
+    help_page_home(user)
 def help_page_reports(user) :
     print('Viewing reports\n   To view a given report, head to the reports page from the home menu. There, select 1 for an Individual account summary,')
     print('2 for a full summary of all accounts, or 3 to view your transaction history. ')
     time.sleep(3)
+    help_page_home(user)
 # This function exists to validate user input and make sure no invalid decisions are entered.
 # It also cleans up my code so I don't have to put a while loop everywhere.
 def bool_decision(prompt, option_1, option_2) : 
