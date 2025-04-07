@@ -207,7 +207,7 @@ def transactions_page(user) :
     amount = input('Enter the amount of the transaction (No dollar sign): ')
     while amount[0:1] == '$' :
         amount = input('Re-enter amount without a dollar sign: ')
-    new_transaction = Transaction(id, user, amount)
+    new_transaction = Transaction(id, user, amount, datetime.datetime.now().date().__str__(), datetime.datetime.now().strftime("%H:%M:%S"))
     print(f'Transaction created! Info:\n\n{new_transaction}')
     prompt_home(user)
 
@@ -244,7 +244,7 @@ def reports_page(user) :
             # Loop through the user's account dictionary and add each account to the dict
             for i in range(0, len(user.accounts)):
                 accounts_dict[i] = user.accounts[i]
-            account_num = int(input('\n'))
+            account_num = int(input('\n')) - 1
             while account_num not in accounts_dict.keys() :
                 account_num = int(input('Not a valid account #, try again: '))
             print(accounts_dict[account_num])
@@ -271,12 +271,12 @@ def help_page_home(user) :
         case '3' :
             help_page_transactions(user)
         case '4' :
-            help_page_transactions(user)
+            help_page_reports(user)
         case '5' :
             home_page(user)
         case _ : 
             print('Enter a valid option! (1-3)')
-            help_page_home()
+            help_page_home(user)
 
 def help_page_general(user) :
     print(f'\nSelecting items\n   To select a field or item in the program, simply input the number at the beginning of the line.')
