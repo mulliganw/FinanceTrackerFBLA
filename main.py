@@ -25,12 +25,16 @@ class User :
         return self.username
     
 class Transaction :
-    def __init__(self, id, user, amount, write=True) :
+    def __init__(self, id, user, amount, date, time, write=True) :
         self.id = int(id)
         self.user = user
         self.amount = amount
-        self.date = datetime.datetime.now().date().__str__()
-        self.time = datetime.datetime.now().strftime("%H:%M:%S")
+        if write : 
+            self.date = datetime.datetime.now().date().__str__()
+            self.time = datetime.datetime.now().strftime("%H:%M:%S")
+        else : 
+            self.date = date
+            self.time = time
         self.user.transactions.append(self)
         if write :
             transactions.write_row({'id' : self.id, 'user' : self.user, 'amount' : self.amount, 
@@ -106,7 +110,7 @@ class Database:
                 case 'A':
                     account_obj_array.append(Account(vals[0], user_obj_dict[vals[1]], vals[2], vals[3], False))
                 case 'T':
-                    transaction_obj_array.append(Transaction(vals[4], user_obj_dict[vals[0]], vals[1], False))
+                    transaction_obj_array.append(Transaction(vals[4], user_obj_dict[vals[0]], vals[1], vals[2], vals[3], False))
 
 # Create 3 object arrays and 1 object dict to restore lost variables when program is stopped.
 user_obj_dict = {}
@@ -288,7 +292,7 @@ def help_page_accounts(user) :
     print('   page and an account number will be given to you.')
     time.sleep(3)
     print('Adding money to an existing account\n   By selecting the second option in the Accounts page, you\'ll be easily ')
-    print('   able to add any amount of money you\d like to your existing account. Select the account you want to add money to from the list ')
+    print('   able to add any amount of money you\'d like to your existing account. Select the account you want to add money to from the list ')
     print('   of all of your accounts, then enter the amount of money in the format 000.00, with no beginning dollar sign ($)')
     time.sleep(3)
     help_page_home(user)
