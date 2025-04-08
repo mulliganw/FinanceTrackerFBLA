@@ -46,8 +46,8 @@ class Transaction :
 class Account : 
     def __init__(self, id, user, balance, type, write=True) :
         self.id = int(id)
-        self.user = user
-        self.balance = balance
+        self.user = userfix
+        self.balance = float(balance)
         self.type = type
         self.user.accounts.append(self)
         if write :
